@@ -1,0 +1,30 @@
+(def! not 
+  (fn [a] (if a false true)))
+
+(def! load-file 
+  (fn [file] 
+    (eval 
+      (read-string 
+        (str 
+          "(do " 
+          (slurp file) 
+          "\nnil)")))))
+
+(def! swap! 
+  (fn [atom fn]
+    (reset! atom (fn atom))))
+
+(defmacro! cond [& xs]
+  (if (> (count xs) 0)
+    (list 'if (first xs)
+      (if (> (count xs) 1)
+        (nth xs 1)
+        (throw "odd number of forms to cond"))
+      (cons 'cond (rest (rest xs))))
+    nil))
+
+(defmacro! or [& exp]
+  (if (> (count exp) 1)
+    `(let [first-val ~(first exp)]
+       (if first-val first-val (or ~@(rest exp))))
+    (first exp)))

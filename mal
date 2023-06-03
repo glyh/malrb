@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+
+require 'pathname'
+require 'readline'
+
+require_relative 'ast'
+require_relative 'reader'
+require_relative 'env'
+require_relative 'eval'
+
+argv_to_pass = []
+input_fiber = nil
+
+if ARGV[0] != nil
+  argv_to_pass = ARGV[1..]
+  input_fiber = Fiber.new do 
+    Pathname.new(ARGV[0]).read
+  end
+else 
+  input_fiber = Fiber.new do
+    loop do
+      src = Readline.readline('usr> ', true)
+      if src == nil
+        puts 'EOF Reached'
+        exit
+      end
+      Fiber.yield(src)
+    rescue Interrupt 
+      puts 'Interrupted'
+      exit
+    end
+  end
+end
+
+read = reader(input_fiber)
+
+env = new_global_env()
+env.set(:"*argv*", MalList.new(argv_to_pass))
+
+loop do
+  puts wrap_inspect(eval(read.resume, env))
+rescue FiberError
+  break
+end
